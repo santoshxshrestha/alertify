@@ -5,6 +5,9 @@ use clap::Parser;
 use clap::Subcommand;
 use zbus::{Connection, proxy, zvariant::Value};
 
+pub mod icons;
+use crate::icons::STD_ACTION_ICONS;
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -117,7 +120,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             send_notification(notification).await?;
         }
         Commands::ListIcons { list: _ } => {
-            todo!("Icon listing not implemented yet");
+            println!("Available Icons:");
+            for (icon_name, description) in STD_ACTION_ICONS {
+                println!("{}: {}", icon_name, description);
+            }
         }
     }
 
