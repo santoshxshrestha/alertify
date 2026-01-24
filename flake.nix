@@ -1,5 +1,5 @@
 {
-  description = "A Nix-flake-based Rust development environment (multi-system, flake-utils)";
+  description = "A Nix-flake-based Rust development environment for alertify";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
@@ -13,19 +13,6 @@
       pkgs = nixpkgs.legacyPackages.${system};
       naerskLib = pkgs.callPackage naersk { };
 
-      runtimedeps = [
-        pkgs.libxkbcommon
-
-        # GPU backend
-        pkgs.vulkan-loader
-        pkgs.libGL
-
-        # Window system
-        pkgs.wayland
-        pkgs.xorg.libX11
-        pkgs.xorg.libXcursor
-        pkgs.xorg.libXi
-      ];
     in
     {
       packages.${system}.default = naerskLib.buildPackage {
@@ -45,9 +32,6 @@
         ];
         nativeBuildInputs = [ pkgs.pkg-config ];
 
-        # env.RUST_SRC_PATH =
-        #   "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-        env.RUSTFLAGS = "-C link-arg=-Wl,-rpath,${nixpkgs.lib.makeLibraryPath runtimedeps}";
       };
       formatter = pkgs.rustfmt;
     };
