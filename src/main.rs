@@ -3,16 +3,38 @@ use std::error::Error;
 
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 use zbus::{Connection, proxy, zvariant::Value};
 
 pub mod icons;
-use crate::icons::STD_ACTION_ICONS;
+
+use crate::icons::{
+    STD_ACTION_ICONS, STD_ANIMATION_ICONS, STD_APPLICATION_ICONS, STD_CATEGORY_ICONS,
+    STD_DEVICE_ICONS, STD_EMBLEM_ICONS, STD_EMOTION_ICONS, STD_INTERNATIONAL_ICONS,
+    STD_MIME_TYPE_ICONS, STD_PLACE_ICONS, STD_STATUS_ICONS,
+};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum IconSet {
+    All,
+    Actions,
+    Animations,
+    Applications,
+    Categories,
+    Devices,
+    Emblems,
+    Emotes,
+    International,
+    MimeTypes,
+    Places,
+    Status,
 }
 
 #[derive(Debug, Subcommand)]
@@ -40,9 +62,9 @@ pub enum Commands {
     },
 
     ListIcons {
-        /// List available icons
-        #[arg(short, long, default_value_t = false)]
-        list: bool,
+        /// Which icon set to list
+        #[arg(short, long, value_enum, default_value_t = IconSet::All)]
+        set: IconSet,
     },
 }
 
@@ -119,10 +141,42 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let notification = Notification::new(app_name, title, body, icon, timeout);
             send_notification(notification).await?;
         }
-        Commands::ListIcons { list: _ } => {
-            println!("Available Icons:");
-            for (icon_name, description) in STD_ACTION_ICONS {
-                println!("{}: {}", icon_name, description);
+        Commands::ListIcons { set } => {
+            let mut lists = Vec::new();
+
+            match set {
+                IconSet::All => {
+                    lists.push(("actions", STD_ACTION_ICONS));
+                    lists.push(("animations", STD_ANIMATION_ICONS));
+                    lists.push(("applications", STD_APPLICATION_ICONS));
+                    lists.push(("categories", STD_CATEGORY_ICONS));
+                    lists.push(("devices", STD_DEVICE_ICONS));
+                    lists.push(("emblems", STD_EMBLEM_ICONS));
+                    lists.push(("emotes", STD_EMOTION_ICONS));
+                    lists.push(("international", STD_INTERNATIONAL_ICONS));
+                    lists.push(("mimetypes", STD_MIME_TYPE_ICONS));
+                    lists.push(("places", STD_PLACE_ICONS));
+                    lists.push(("status", STD_STATUS_ICONS));
+                }
+                IconSet::Actions => lists.push(("actions", STD_ACTION_ICONS)),
+                IconSet::Animations => lists.push(("animations", STD_ANIMATION_ICONS)),
+                IconSet::Applications => lists.push(("applications", STD_APPLICATION_ICONS)),
+                IconSet::Categories => lists.push(("categories", STD_CATEGORY_ICONS)),
+                IconSet::Devices => lists.push(("devices", STD_DEVICE_ICONS)),
+                IconSet::Emblems => lists.push(("emblems", STD_EMBLEM_ICONS)),
+                IconSet::Emotes => lists.push(("emotes", STD_EMOTION_ICONS)),
+                IconSet::International => lists.push(("international", STD_INTERNATIONAL_ICONS)),
+                IconSet::MimeTypes => lists.push(("mimetypes", STD_MIME_TYPE_ICONS)),
+                IconSet::Places => lists.push(("places", STD_PLACE_ICONS)),
+                IconSet::Status => lists.push(("status", STD_STATUS_ICONS)),
+            }
+
+            for (label, icons) in lists {
+                println!("[{label}]");
+                for (icon_name, description) in icons {
+                    println!("{}: {}", icon_name, description);
+                }
+                println!();
             }
         }
     }
