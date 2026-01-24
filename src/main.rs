@@ -174,7 +174,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             for (label, icons) in lists {
                 println!("[{label}]");
                 for (icon_name, description) in icons {
-                    println!("{}: {}", icon_name, description);
+                    println!("{}: {}\n", icon_name, description);
                 }
                 println!();
             }
