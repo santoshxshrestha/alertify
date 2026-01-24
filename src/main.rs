@@ -2,30 +2,45 @@ use std::collections::HashMap;
 use std::error::Error;
 
 use clap::Parser;
+use clap::Subcommand;
 use zbus::{Connection, proxy, zvariant::Value};
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
 struct Cli {
-    /// Application name
-    #[arg(short, long, default_value_t = String::from("my_app"))]
-    app_name: String,
+    #[command(subcommand)]
+    pub command: Commands,
+}
 
-    /// Notification title
-    #[arg(short, long, default_value_t = String::from("A summary"))]
-    title: String,
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    Notify {
+        /// Application name for the notification
+        #[arg(short, long, default_value_t = String::from("my_app"))]
+        app_name: String,
 
-    /// Notification body
-    #[arg(short, long, default_value_t = String::from("Some body"))]
-    body: String,
+        /// Notification title or summary
+        #[arg(short, long, default_value_t = String::from("A summary"))]
+        title: String,
 
-    /// Icon name
-    /// Default is "dialog-information"
-    #[arg(short, long, default_value_t = String::from("dialog-information"))]
-    icon: String,
+        /// Notification body text
+        #[arg(short, long, default_value_t = String::from("Some body"))]
+        body: String,
 
-    /// Notification timeout in milliseconds
-    #[arg(short = 's', long, default_value_t = 5000)]
-    timeout: i32,
+        /// Icon name
+        #[arg(short, long, default_value_t = String::from("dialog-information"))]
+        icon: String,
+
+        /// Notification timeout in milliseconds
+        #[arg(short = 's', long, default_value_t = 5000)]
+        timeout: i32,
+    },
+
+    ListIcons {
+        /// List available icons
+        #[arg(short, long, default_value_t = false)]
+        list: bool,
+    },
 }
 
 pub struct Notification {
@@ -66,14 +81,10 @@ trait Notifications {
     ) -> zbus::Result<u32>;
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let cli = Cli::parse();
-
-    let notification = Notification::new(cli.app_name, cli.title, cli.body, cli.icon, cli.timeout);
-
+pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn Error>> {
     let connection = Connection::session().await?;
     let proxy = NotificationsProxy::new(&connection).await?;
+
     let _reply = proxy
         .notify(
             &notification.app_name,
@@ -86,6 +97,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
             notification.timeout,
         )
         .await?;
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::Notify {
+            app_name,
+            title,
+            body,
+            icon,
+            timeout,
+        } => {
+            let notification = Notification::new(app_name, title, body, icon, timeout);
+            send_notification(notification).await?;
+        }
+        Commands::ListIcons { list: _ } => {
+            todo!("Icon listing not implemented yet");
+        }
+    }
 
     Ok(())
 }
