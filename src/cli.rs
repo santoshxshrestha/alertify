@@ -37,6 +37,12 @@ pub enum Commands {
         timeout: i32,
     },
 
+    Defaults {
+        /// Pomodoro mode
+        #[arg(short, long, default_value_t = false)]
+        pomodoro: bool,
+    },
+
     ListIcons {
         /// Which icon set to list
         #[arg(short, long, value_enum, default_value_t = IconSet::All)]

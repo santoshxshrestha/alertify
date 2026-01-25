@@ -172,6 +172,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!();
             }
         }
+        Commands::Defaults { pomodoro } => {
+            if pomodoro {
+                let notification = Notification::new(
+                    String::from("Pomodoro"),
+                    0,
+                    String::from("Time's up!"),
+                    String::from("Take a short break."),
+                    String::from("alarm-clock-elapsed"),
+                    10000,
+                );
+                send_notification(notification).await?;
+            } else {
+                println!("No default action specified.");
+            }
+        }
     }
 
     Ok(())
