@@ -1,27 +1,22 @@
+use clap::Parser;
 use std::collections::HashMap;
 use std::error::Error;
 
-use clap::Parser;
-use clap::Subcommand;
 use clap::ValueEnum;
 use zbus::{Connection, proxy, zvariant::Value};
 
 pub mod actions;
+pub mod cli;
 pub mod icons;
 use actions::ACTIONS;
+use cli::Cli;
+use cli::Commands;
 
 use crate::icons::{
     STD_ACTION_ICONS, STD_ANIMATION_ICONS, STD_APPLICATION_ICONS, STD_CATEGORY_ICONS,
     STD_DEVICE_ICONS, STD_EMBLEM_ICONS, STD_EMOTION_ICONS, STD_INTERNATIONAL_ICONS,
     STD_MIME_TYPE_ICONS, STD_PLACE_ICONS, STD_STATUS_ICONS,
 };
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-}
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum IconSet {
@@ -37,41 +32,6 @@ pub enum IconSet {
     MimeTypes,
     Places,
     Status,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum Commands {
-    Notify {
-        /// Application name for the notification
-        #[arg(short, long, default_value_t = String::from("my_app"))]
-        app_name: String,
-
-        /// Replaces ID of the notification to replace
-        #[arg(short = 'r', long, default_value_t = 0)]
-        replaces_id: u32,
-
-        /// Notification title or summary
-        #[arg(short, long, default_value_t = String::from("A summary"))]
-        title: String,
-
-        /// Notification body text
-        #[arg(short, long, default_value_t = String::from("Some body"))]
-        body: String,
-
-        /// Icon name
-        #[arg(short, long, default_value_t = String::from("dialog-information"))]
-        icon: String,
-
-        /// Notification timeout in milliseconds
-        #[arg(short = 's', long, default_value_t = 5000)]
-        timeout: i32,
-    },
-
-    ListIcons {
-        /// Which icon set to list
-        #[arg(short, long, value_enum, default_value_t = IconSet::All)]
-        set: IconSet,
-    },
 }
 
 pub struct Notification {
