@@ -116,7 +116,7 @@ trait Notifications {
         summary: &str,
         body: &str,
         actions: &[&str],
-        hints: HashMap<&str, &Value<'_>>,
+        hints: HashMap<&str, Value<'_>>,
         expire_timeout: i32,
     ) -> zbus::Result<u32>;
 }
@@ -125,7 +125,13 @@ pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn
     let connection = Connection::session().await?;
     let proxy = NotificationsProxy::new(&connection).await?;
 
-    let _reply = proxy
+    // FIXME: this is currently not working in my sys according to the [doc](https://specifications.freedesktop.org/notification/latest/hints.html)
+    // it should play the "alarm-clock-elapsed" sound if available
+    let value = Value::Str("message-new-instant".into());
+    let mut hint = HashMap::new();
+    hint.insert("sound-name", value);
+
+    let reply = proxy
         .notify(
             &notification.app_name,
             notification.replaces_id,
@@ -142,10 +148,12 @@ pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn
                 ACTIONS[3].0,
                 ACTIONS[3].1,
             ],
-            HashMap::new(),
+            hint,
             notification.timeout,
         )
         .await?;
+
+    dbg!(reply);
 
     Ok(())
 }
