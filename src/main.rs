@@ -44,6 +44,10 @@ pub enum Commands {
         #[arg(short, long, default_value_t = String::from("my_app"))]
         app_name: String,
 
+        /// Replaces ID of the notification to replace
+        #[arg(short = 'r', long, default_value_t = 0)]
+        replaces_id: u32,
+
         /// Notification title or summary
         #[arg(short, long, default_value_t = String::from("A summary"))]
         title: String,
@@ -70,6 +74,7 @@ pub enum Commands {
 
 pub struct Notification {
     pub app_name: String,
+    pub replaces_id: u32,
     pub title: String,
     pub body: String,
     pub icon: String,
@@ -77,9 +82,17 @@ pub struct Notification {
 }
 
 impl Notification {
-    pub fn new(app_name: String, title: String, body: String, icon: String, timeout: i32) -> Self {
+    pub fn new(
+        app_name: String,
+        replaces_id: u32,
+        title: String,
+        body: String,
+        icon: String,
+        timeout: i32,
+    ) -> Self {
         Self {
             app_name,
+            replaces_id,
             title,
             body,
             icon,
@@ -113,7 +126,7 @@ pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn
     let _reply = proxy
         .notify(
             &notification.app_name,
-            0,
+            notification.replaces_id,
             &notification.icon,
             &notification.title,
             &notification.body,
@@ -133,12 +146,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     match cli.command {
         Commands::Notify {
             app_name,
+            replaces_id,
             title,
             body,
             icon,
             timeout,
         } => {
-            let notification = Notification::new(app_name, title, body, icon, timeout);
+            let notification = Notification::new(app_name, replaces_id, title, body, icon, timeout);
             send_notification(notification).await?;
         }
         Commands::ListIcons { set } => {
