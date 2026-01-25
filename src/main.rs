@@ -6,7 +6,9 @@ use clap::Subcommand;
 use clap::ValueEnum;
 use zbus::{Connection, proxy, zvariant::Value};
 
+pub mod actions;
 pub mod icons;
+use actions::ACTIONS;
 
 use crate::icons::{
     STD_ACTION_ICONS, STD_ANIMATION_ICONS, STD_APPLICATION_ICONS, STD_CATEGORY_ICONS,
@@ -130,7 +132,16 @@ pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn
             &notification.icon,
             &notification.title,
             &notification.body,
-            &[],
+            &[
+                ACTIONS[0].0,
+                ACTIONS[0].1,
+                ACTIONS[1].0,
+                ACTIONS[1].1,
+                ACTIONS[2].0,
+                ACTIONS[2].1,
+                ACTIONS[3].0,
+                ACTIONS[3].1,
+            ],
             HashMap::new(),
             notification.timeout,
         )
