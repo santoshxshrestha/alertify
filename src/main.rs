@@ -68,6 +68,7 @@ impl Notification {
     default_path = "/org/freedesktop/Notifications"
 )]
 trait Notifications {
+    #[allow(clippy::too_many_arguments)]
     fn notify(
         &self,
         app_name: &str,
