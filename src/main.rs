@@ -79,6 +79,27 @@ trait Notifications {
         hints: HashMap<&str, Value<'_>>,
         expire_timeout: i32,
     ) -> zbus::Result<u32>;
+
+    #[zbus(signal)]
+    pub async fn action_invoked(
+        ctx: &SignalContext<'_>,
+        id: u32,
+        action_key: &str,
+    ) -> zbus::Result<()>;
+
+    #[zbus(signal)]
+    pub async fn notification_replied(
+        ctx: &SignalContext<'_>,
+        id: u32,
+        text: &str,
+    ) -> zbus::Result<()>;
+
+    #[zbus(signal)]
+    pub async fn notification_closed(
+        ctx: &SignalContext<'_>,
+        id: u32,
+        reason: u32,
+    ) -> zbus::Result<()>;
 }
 
 pub async fn send_notification(notification: Notification) -> Result<(), Box<dyn Error>> {
