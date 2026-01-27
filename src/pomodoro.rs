@@ -16,7 +16,7 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
         0,
         String::from("Time's up!"),
         String::from("Take a short break."),
-        String::from("alarm-clock-elapsed"),
+        String::from("dialog-information"),
         10000,
     );
 
