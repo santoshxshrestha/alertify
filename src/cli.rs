@@ -1,4 +1,4 @@
-use crate::IconSet;
+use crate::icons::utils::IconSet;
 use clap::Parser;
 use clap::Subcommand;
 
