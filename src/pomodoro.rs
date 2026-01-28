@@ -1,7 +1,9 @@
+#![allow(unused)]
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind::Press;
 use crossterm::event::{self, KeyEvent};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
 use std::io::Write;
 use std::sync::Arc;
@@ -12,6 +14,20 @@ use crate::notification::{Notification, send_notification};
 use std::error::Error;
 use std::time::Duration;
 
+struct RawModeGuard;
+impl RawModeGuard {
+    fn new() -> Result<Self, std::io::Error> {
+        enable_raw_mode()?;
+        Ok(Self)
+    }
+}
+
+impl Drop for RawModeGuard {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum PomodoroState {
     Work,
@@ -20,6 +36,7 @@ pub enum PomodoroState {
 }
 
 pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Error>> {
+    let _raw_mode_guard = RawModeGuard::new()?;
     loop {
         match event::read()? {
             Event::Key(KeyEvent {
@@ -27,6 +44,7 @@ pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Err
                 kind: Press,
                 ..
             }) => {
+                disable_raw_mode()?;
                 std::process::exit(0);
             }
 
