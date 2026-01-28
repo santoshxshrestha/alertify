@@ -14,5 +14,6 @@ readme = "README.md"
 chrono = "0.4.43"
 clap = { version = "4.5.54", features = ["derive"] }
 crossterm = "0.29.0"
+indicatif = "0.18.3"
 tokio = { version = "1.49.0", features = ["full"] }
 zbus = "5.13.2"
