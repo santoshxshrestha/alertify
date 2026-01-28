@@ -49,6 +49,16 @@ pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Err
             }
 
             Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: event::KeyModifiers::CONTROL,
+                kind: Press,
+                ..
+            }) => {
+                disable_raw_mode()?;
+                std::process::exit(0);
+            }
+
+            Event::Key(KeyEvent {
                 code: KeyCode::Char(' '),
                 kind: Press,
                 ..
