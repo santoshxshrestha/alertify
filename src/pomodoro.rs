@@ -77,7 +77,7 @@ pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Err
 }
 
 pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
-    let total_seconds = 5;
+    let total_seconds = 25 * 60;
 
     let state = Arc::new(RwLock::new(PomodoroState::Work));
     let mut remaining_time = Duration::from_secs(total_seconds);
@@ -123,6 +123,7 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
 
                 if remaining_time.as_secs() == 0 {
                     progress_bar.finish_with_message("Done! Sending notification...");
+                    let _ = disable_raw_mode();
                     return send_notification(notification).await;
                 }
             }
