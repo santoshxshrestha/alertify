@@ -1,3 +1,4 @@
+use chrono;
 use crossterm::cursor;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
@@ -113,7 +114,10 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
         match state {
             PomodoroState::Work => {
                 remaining_time = remaining_time.saturating_sub(Duration::from_secs(1));
-                print!("Working... Remaining time: {:?}", remaining_time);
+                print!(
+                    "Working... Remaining time: {}",
+                    format_mm_ss(remaining_time.as_secs() as i64)
+                );
 
                 if remaining_time.as_secs() == 0 {
                     println!();
@@ -121,7 +125,10 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
                 }
             }
             PomodoroState::Pause => {
-                print!("Paused... Remaining time: {:?}", remaining_time);
+                print!(
+                    "Paused... Remaining time: {}",
+                    format_mm_ss(remaining_time.as_secs() as i64)
+                );
             }
             PomodoroState::Break => {
                 println!();
@@ -131,4 +138,11 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
 
         io::stdout().flush()?;
     }
+}
+
+fn format_mm_ss(total_seconds: i64) -> String {
+    let d = chrono::Duration::seconds(total_seconds.max(0));
+    let minutes = d.num_minutes();
+    let seconds = (d - chrono::Duration::minutes(minutes)).num_seconds();
+    format!("{:02}:{:02}", minutes, seconds)
 }
