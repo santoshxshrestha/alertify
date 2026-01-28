@@ -1,8 +1,12 @@
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind::Press;
-use crossterm::event::poll;
 use crossterm::event::{self, KeyEvent};
+
+use std::io::Write;
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::thread;
 
 use crate::notification::{Notification, send_notification};
 use std::error::Error;
@@ -13,46 +17,47 @@ pub enum PomodoroState {
     Pause,
     Break,
 }
-impl PomodoroState {
-    pub fn handle_state(&mut self) -> Result<(), Box<dyn Error>> {
-        if poll(Duration::from_micros(1))? {
-            match event::read()? {
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('q'),
-                    kind: Press,
-                    ..
-                }) => {
-                    std::process::exit(0);
-                }
 
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char(' '),
-                    kind: Press,
-                    ..
-                }) => match self {
+pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Error>> {
+    loop {
+        match event::read()? {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('q'),
+                kind: Press,
+                ..
+            }) => {
+                std::process::exit(0);
+            }
+
+            Event::Key(KeyEvent {
+                code: KeyCode::Char(' '),
+                kind: Press,
+                ..
+            }) => {
+                let mut state = state.write().expect("Failed to acquire write lock");
+                match *state {
                     PomodoroState::Work => {
-                        *self = PomodoroState::Pause;
+                        *state = PomodoroState::Pause;
                         println!("Paused!");
                     }
                     PomodoroState::Pause => {
-                        *self = PomodoroState::Work;
+                        *state = PomodoroState::Work;
                         println!("Resumed!");
                     }
                     PomodoroState::Break => {
                         println!("In break, cannot pause or resume.");
                     }
-                },
-                _ => {
-                    println!("Other key pressed...");
                 }
             }
+            _ => {
+                println!("Other key pressed...");
+            }
         }
-        Ok(())
     }
 }
 
 pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
-    let mut state = PomodoroState::Work;
+    let state = Arc::new(RwLock::new(PomodoroState::Work));
     let mut remaining_time = Duration::from_secs(25 * 60); // 25 minutes
     let notification = Notification::new(
         String::from("Pomodoro"),
@@ -63,13 +68,21 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
         10000,
     );
 
+    let clone_state = Arc::clone(&state);
+
+    thread::spawn(move || {
+        println!("we are in the thread");
+        handle_state(clone_state).unwrap();
+        println!("exiting thread");
+    });
+
     loop {
-        state.handle_state()?;
-        match state {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        match *state.read().expect("Failed to acquire read lock") {
             PomodoroState::Work => {
-                tokio::time::sleep(Duration::from_secs(1)).await;
                 remaining_time -= Duration::from_secs(1);
-                dbg!(remaining_time);
+                println!("Working... Remaining time: {:?}", remaining_time);
+                std::io::stdout().flush().unwrap();
                 if remaining_time.as_secs() == 0 {
                     return send_notification(notification).await;
                 }
