@@ -14,7 +14,7 @@ pub enum PomodoroState {
     Break,
 }
 impl PomodoroState {
-    pub fn handle_state(&self) -> Result<(), Box<dyn Error>> {
+    pub fn handle_state(&mut self) -> Result<(), Box<dyn Error>> {
         if poll(Duration::from_micros(1))? {
             match event::read()? {
                 Event::Key(KeyEvent {
@@ -22,10 +22,28 @@ impl PomodoroState {
                     kind: Press,
                     ..
                 }) => {
-                    return Ok(());
+                    std::process::exit(0);
                 }
+
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char(' '),
+                    kind: Press,
+                    ..
+                }) => match self {
+                    PomodoroState::Work => {
+                        *self = PomodoroState::Pause;
+                        println!("Paused!");
+                    }
+                    PomodoroState::Pause => {
+                        *self = PomodoroState::Work;
+                        println!("Resumed!");
+                    }
+                    PomodoroState::Break => {
+                        println!("In break, cannot pause or resume.");
+                    }
+                },
                 _ => {
-                    return Ok(());
+                    println!("Other key pressed...");
                 }
             }
         }
@@ -34,7 +52,7 @@ impl PomodoroState {
 }
 
 pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
-    let state = PomodoroState::Work;
+    let mut state = PomodoroState::Work;
     let mut remaining_time = Duration::from_secs(25 * 60); // 25 minutes
     let notification = Notification::new(
         String::from("Pomodoro"),
@@ -46,6 +64,7 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
     );
 
     loop {
+        state.handle_state()?;
         match state {
             PomodoroState::Work => {
                 tokio::time::sleep(Duration::from_secs(1)).await;
@@ -56,7 +75,7 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
                 }
             }
             PomodoroState::Pause => {
-                todo!("implement pause functionality by the use of crossterm");
+                println!("Paused... Remaining time: {:?}", remaining_time);
             }
             PomodoroState::Break => {
                 return Ok(());
