@@ -12,6 +12,7 @@ use crate::notification::{Notification, send_notification};
 use std::error::Error;
 use std::time::Duration;
 
+#[derive(Clone, Debug)]
 pub enum PomodoroState {
     Work,
     Pause,
@@ -71,14 +72,17 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
     let clone_state = Arc::clone(&state);
 
     thread::spawn(move || {
-        println!("we are in the thread");
         handle_state(clone_state).unwrap();
-        println!("exiting thread");
     });
 
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
-        match *state.read().expect("Failed to acquire read lock") {
+        let state = {
+            let state = state.read().expect("Failed to acquire read lock");
+            state.clone()
+        };
+
+        match state {
             PomodoroState::Work => {
                 remaining_time -= Duration::from_secs(1);
                 println!("Working... Remaining time: {:?}", remaining_time);
