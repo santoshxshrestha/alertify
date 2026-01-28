@@ -1,9 +1,11 @@
-#![allow(unused)]
+use crossterm::cursor;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind::Press;
 use crossterm::event::{self, KeyEvent};
+use crossterm::terminal;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use std::io;
 
 use std::io::Write;
 use std::sync::Arc;
@@ -37,25 +39,23 @@ pub enum PomodoroState {
 
 pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Error>> {
     let _raw_mode_guard = RawModeGuard::new()?;
+
     loop {
         match event::read()? {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('q'),
                 kind: Press,
                 ..
-            }) => {
-                disable_raw_mode()?;
-                std::process::exit(0);
-            }
-
-            Event::Key(KeyEvent {
+            })
+            | Event::Key(KeyEvent {
                 code: KeyCode::Char('c'),
                 modifiers: event::KeyModifiers::CONTROL,
                 kind: Press,
                 ..
             }) => {
-                disable_raw_mode()?;
-                std::process::exit(0);
+                let mut state = state.write().expect("Failed to acquire write lock");
+                *state = PomodoroState::Break;
+                return Ok(());
             }
 
             Event::Key(KeyEvent {
@@ -67,20 +67,14 @@ pub fn handle_state(state: Arc<RwLock<PomodoroState>>) -> Result<(), Box<dyn Err
                 match *state {
                     PomodoroState::Work => {
                         *state = PomodoroState::Pause;
-                        println!("Paused!");
                     }
                     PomodoroState::Pause => {
                         *state = PomodoroState::Work;
-                        println!("Resumed!");
                     }
-                    PomodoroState::Break => {
-                        println!("In break, cannot pause or resume.");
-                    }
+                    PomodoroState::Break => {}
                 }
             }
-            _ => {
-                println!("Other key pressed...");
-            }
+            _ => {}
         }
     }
 }
@@ -110,21 +104,31 @@ pub async fn handle_pomodoro() -> Result<(), Box<dyn Error>> {
             state.clone()
         };
 
+        crossterm::execute!(
+            io::stdout(),
+            cursor::MoveToColumn(0),
+            terminal::Clear(terminal::ClearType::CurrentLine)
+        )?;
+
         match state {
             PomodoroState::Work => {
-                remaining_time -= Duration::from_secs(1);
-                println!("Working... Remaining time: {:?}", remaining_time);
-                std::io::stdout().flush().unwrap();
+                remaining_time = remaining_time.saturating_sub(Duration::from_secs(1));
+                print!("Working... Remaining time: {:?}", remaining_time);
+
                 if remaining_time.as_secs() == 0 {
+                    println!();
                     return send_notification(notification).await;
                 }
             }
             PomodoroState::Pause => {
-                println!("Paused... Remaining time: {:?}", remaining_time);
+                print!("Paused... Remaining time: {:?}", remaining_time);
             }
             PomodoroState::Break => {
+                println!();
                 return Ok(());
             }
         }
+
+        io::stdout().flush()?;
     }
 }
